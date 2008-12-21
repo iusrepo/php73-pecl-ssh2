@@ -6,8 +6,8 @@
 %define pecl_name ssh2
 
 Name:           php-pecl-ssh2
-Version:        0.10
-Release:        2%{?dist}
+Version:        0.11.0
+Release:        1%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -19,9 +19,7 @@ Source2:        php-pecl-ssh2-0.10-README
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Patch0:         libssh2.diff
-
-BuildRequires:  libssh2-devel php-devel php-pear >= 1:1.4.9-1.2
+BuildRequires:  libssh2-devel php-devel php-pear
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
 Provides:       php-pecl(ssh2) = %{version}
@@ -41,22 +39,20 @@ libssh2 is available from http://www.sourceforge.net/projects/libssh2
 
 %prep
 %setup -c -q 
-%{__mv} package.xml %{pecl_name}-%{version}/%{pecl_name}.xml
+
+#convert package.xml to V2 format
+%{__pear} convert package.xml package2.xml 
+
+%{__mv} package2.xml %{pecl_name}-%{version}/%{pecl_name}.xml
 
 %{__install} -m 644 -c %{SOURCE1} LICENSE
 %{__install} -m 644 -c %{SOURCE2} README
-
-
-cd %{pecl_name}-%{version}
-%patch0 -p0
-
 
 %build
 cd %{pecl_name}-%{version}
 phpize
 %configure
 %{__make} %{?_smp_mflags}
-
 
 %install
 cd %{pecl_name}-%{version}
@@ -101,6 +97,9 @@ fi
 
 
 %changelog
+* Sat Dec 20 2008 Itamar Reis Peixoto <itamar@ispbrasil.com.br> 0.11.0-1
+- convert package.xml to V2 format, update to 0.11.0 #BZ 476405
+
 * Sat Nov 15 2008 Itamar Reis Peixoto <itamar@ispbrasil.com.br> 0.10-2
 - Install pecl xml, license and readme files
 
