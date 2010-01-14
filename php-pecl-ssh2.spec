@@ -1,3 +1,4 @@
+%define _default_patch_fuzz 2 \n\n
 %global php_apiver  %((echo 0; php -i 2>/dev/null | sed -n 's/^PHP API => //p') | tail -1)
 %global php_extdir  %(php-config --extension-dir 2>/dev/null || echo "undefined")
 %global php_version %(php-config --version 2>/dev/null || echo 0)
@@ -7,7 +8,7 @@
 
 Name:           php-pecl-ssh2
 Version:        0.11.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -103,6 +104,10 @@ fi
 
 
 %changelog
+* Thu Jan 14 2010 Chris Weyl <cweyl@alumni.drew.edu> 0.11.0-6
+- bump for libssh2 rebuild
+
+
 * Mon Sep 21 2009 Chris Weyl <cweyl@alumni.drew.edu> - 0.11.0-5
 - rebuild for libssh2 1.2
 
