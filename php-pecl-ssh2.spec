@@ -7,8 +7,8 @@
 %define pecl_name ssh2
 
 Name:           php-pecl-ssh2
-Version:        0.11.0
-Release:        8%{?dist}
+Version:        0.11.3
+Release:        1%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -27,13 +27,19 @@ Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
 Provides:       php-pecl(ssh2) = %{version}
 
-%if %{?php_zend_api}0
+%if %{?php_zend_api:1}0
 Requires:       php(zend-abi) = %{php_zend_api}
 Requires:       php(api) = %{php_core_api}
 %else
 # for EL-5
 Requires:       php-api = %{php_apiver}
 %endif
+
+# RPM 4.8
+%{?filter_provides_in: %filter_provides_in %{php_extdir}/.*\.so$}
+%{?filter_setup}
+# RPM 4.9
+%global __provides_exclude_from %{?__provides_exclude_from:%__provides_exclude_from|}%{php_extdir}/.*\\.so$
 
 
 %description
@@ -43,16 +49,20 @@ libssh2 is available from http://www.sourceforge.net/projects/libssh2
 %prep
 %setup -c -q 
 
-#convert package.xml to V2 format
-%{__pear} convert package.xml package2.xml 
+# http://pecl.php.net/bugs/bug.php?id=24390
+sed -i -e '/PHP_SSH2_VERSION/s/0.11.3-dev/0.11.3/' %{pecl_name}-%{version}/php_ssh2.h
 
-%{__mv} package2.xml %{pecl_name}-%{version}/%{pecl_name}.xml
+extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.* "//;s/".*$//;p}' %{pecl_name}-%{version}/php_ssh2.h)
+if test "x${extver}" != "x%{version}"; then
+   : Error: Upstream PDO ABI version is now ${extver}, expecting %{version}.
+   : Update the pdover macro and rebuild.
+   exit 1
+fi
+
+mv package.xml %{pecl_name}-%{version}/%{pecl_name}.xml
 
 %{__install} -m 644 -c %{SOURCE1} LICENSE
 %{__install} -m 644 -c %{SOURCE2} README
-
-cd %{pecl_name}-%{version}
-%patch0 -p0 -b .php53
 
 
 %build
@@ -75,6 +85,14 @@ install -Dpm 644 %{pecl_name}.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 ; Enable ssh2 extension module
 extension=ssh2.so
 EOF
+
+%check
+# simple module load test
+cd %{pecl_name}-%{version}
+php --no-php-ini \
+    --define extension_dir=modules \
+    --define extension=%{pecl_name}.so \
+    --modules | grep %{pecl_name}
 
 
 %if 0%{?pecl_install:1}
@@ -104,6 +122,11 @@ fi
 
 
 %changelog
+* Thu Jan 19 2012 Remi Collet <remi@fedoraproject.org> - 0.11.3-1
+- update to 0.11.3 for php 5.4
+- add filter to fix private-shared-object-provides
+- add %%check for php extension
+
 * Sat Jan 14 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.11.0-8
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
 
