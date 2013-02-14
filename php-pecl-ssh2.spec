@@ -8,7 +8,7 @@
 
 Name:           php-pecl-ssh2
 Version:        0.11.3
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -122,6 +122,9 @@ fi
 
 
 %changelog
+* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.11.3-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
 * Sat Jul 21 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.11.3-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
 
