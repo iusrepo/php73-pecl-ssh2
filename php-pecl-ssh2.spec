@@ -5,10 +5,15 @@
 %{!?__pecl:     %{expand: %%global __pecl     %{_bindir}/pecl}}
 
 %define pecl_name ssh2
+%if "%{php_version}" < "5.6"
+%global ini_name  %{pecl_name}.ini
+%else
+%global ini_name  40-%{pecl_name}.ini
+%endif
 
 Name:           php-pecl-ssh2
 Version:        0.12
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -80,7 +85,7 @@ install -Dpm 644 %{pecl_name}.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 # install config file
 %{__install} -d %{buildroot}%{_sysconfdir}/php.d
-%{__cat} > %{buildroot}%{_sysconfdir}/php.d/ssh2.ini << 'EOF'
+%{__cat} > %{buildroot}%{_sysconfdir}/php.d/%{ini_name} << 'EOF'
 ; Enable ssh2 extension module
 extension=ssh2.so
 EOF
@@ -115,12 +120,16 @@ fi
 %files
 %defattr(-,root,root,-)
 %doc LICENSE README
-%config(noreplace) %{_sysconfdir}/php.d/ssh2.ini
+%config(noreplace) %{_sysconfdir}/php.d/%{ini_name}
 %{php_extdir}/ssh2.so
 %{pecl_xmldir}/%{name}.xml
 
 
 %changelog
+* Thu Jun 19 2014 Remi Collet <rcollet@redhat.com> - 1.2.0-4
+- rebuild for https://fedoraproject.org/wiki/Changes/Php56
+- add numerical prefix to extension configuration file
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.12-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
