@@ -13,7 +13,7 @@
 
 Name:           php-pecl-ssh2
 Version:        0.12
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -28,8 +28,10 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libssh2-devel >= 1.2
 BuildRequires:  php-devel
 BuildRequires:  php-pear
+%if 0%{?fedora} < 24
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
+%endif
 
 Provides:       php-pecl(ssh2) = %{version}
 Provides:       php-pecl(%{pecl_name})%{?_isa} = %{version}
@@ -99,6 +101,7 @@ php --no-php-ini \
     --modules | grep %{pecl_name}
 
 
+%if 0%{?fedora} < 24
 %if 0%{?pecl_install:1}
 %post
 %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
@@ -110,6 +113,7 @@ php --no-php-ini \
 if [ $1 -eq 0 ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
+%endif
 %endif
 
 
@@ -126,6 +130,9 @@ fi
 
 
 %changelog
+* Thu Feb 25 2016 Remi Collet <remi@fedoraproject.org> - 0.12-8
+- drop scriptlets (replaced by file triggers in php-pear) #1310546
+
 * Thu Feb 04 2016 Fedora Release Engineering <releng@fedoraproject.org> - 0.12-7
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
 
