@@ -1,54 +1,30 @@
-%define _default_patch_fuzz 2 \n\n
-%global php_apiver  %((echo 0; php -i 2>/dev/null | sed -n 's/^PHP API => //p') | tail -1)
-%global php_extdir  %(php-config --extension-dir 2>/dev/null || echo "undefined")
-%global php_version %(php-config --version 2>/dev/null || echo 0)
-%{!?__pecl:     %{expand: %%global __pecl     %{_bindir}/pecl}}
-
 %define pecl_name ssh2
-%if "%{php_version}" < "5.6"
-%global ini_name  %{pecl_name}.ini
-%else
 %global ini_name  40-%{pecl_name}.ini
-%endif
 
 Name:           php-pecl-ssh2
-Version:        0.12
-Release:        8%{?dist}
+Version:        1.0
+Release:        1%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/ssh2
 Source0:        http://pecl.php.net/get/ssh2-%{version}.tgz
-Source1:        PHP-LICENSE-3.01
 Source2:        php-pecl-ssh2-0.10-README
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  libssh2-devel >= 1.2
-BuildRequires:  php-devel
+BuildRequires:  php-devel > 7
 BuildRequires:  php-pear
-%if 0%{?fedora} < 24
-Requires(post): %{__pecl}
-Requires(postun): %{__pecl}
-%endif
 
-Provides:       php-pecl(ssh2) = %{version}
+Provides:       php-%{pecl_name}               = %{version}
+Provides:       php-%{pecl_name}%{?_isa}       = %{version}
+Provides:       php-pecl(%{pecl_name})         = %{version}
 Provides:       php-pecl(%{pecl_name})%{?_isa} = %{version}
 
-%if %{?php_zend_api:1}0
 Requires:       php(zend-abi) = %{php_zend_api}
 Requires:       php(api) = %{php_core_api}
-%else
-# for EL-5
-Requires:       php-api = %{php_apiver}
-%endif
-
-# RPM 4.8
-%{?filter_provides_in: %filter_provides_in %{php_extdir}/.*\.so$}
-%{?filter_setup}
-# RPM 4.9
-%global __provides_exclude_from %{?__provides_exclude_from:%__provides_exclude_from|}%{php_extdir}/.*\\.so$
 
 
 %description
@@ -57,6 +33,12 @@ libssh2 is available from http://www.sourceforge.net/projects/libssh2
 
 %prep
 %setup -c -q 
+
+# Don't install/register tests
+sed -e 's/role="test"/role="src"/' \
+    -e '/LICENSE/s/role="doc"/role="src"/' \
+    -i package.xml
+
 
 extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.* "//;s/".*$//;p}' %{pecl_name}-%{version}/php_ssh2.h)
 if test "x${extver}" != "x%{version}"; then
@@ -67,7 +49,6 @@ fi
 
 mv package.xml %{pecl_name}-%{version}/%{pecl_name}.xml
 
-%{__install} -m 644 -c %{SOURCE1} LICENSE
 %{__install} -m 644 -c %{SOURCE2} README
 
 
@@ -79,18 +60,24 @@ phpize
 
 %install
 cd %{pecl_name}-%{version}
-%{__rm} -rf %{buildroot}
-%{__make} install INSTALL_ROOT=%{buildroot}
+rm -rf %{buildroot}
+make install INSTALL_ROOT=%{buildroot}
 
 # Install XML package description
 install -Dpm 644 %{pecl_name}.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 # install config file
-%{__install} -d %{buildroot}%{_sysconfdir}/php.d
-%{__cat} > %{buildroot}%{_sysconfdir}/php.d/%{ini_name} << 'EOF'
+install -d %{buildroot}%{_sysconfdir}/php.d
+cat > %{buildroot}%{_sysconfdir}/php.d/%{ini_name} << 'EOF'
 ; Enable ssh2 extension module
 extension=ssh2.so
 EOF
+
+# Documentation
+for i in $(grep 'role="doc"' package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 NTS/$i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
+done
+
 
 %check
 # simple module load test
@@ -101,35 +88,20 @@ php --no-php-ini \
     --modules | grep %{pecl_name}
 
 
-%if 0%{?fedora} < 24
-%if 0%{?pecl_install:1}
-%post
-%{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
-%endif
-
-
-%if 0%{?pecl_uninstall:1}
-%postun
-if [ $1 -eq 0 ] ; then
-    %{pecl_uninstall} %{pecl_name} >/dev/null || :
-fi
-%endif
-%endif
-
-
-%clean
-%{__rm} -rf %{buildroot}
-
-
 %files
-%defattr(-,root,root,-)
-%doc LICENSE README
+%license %{pecl_name}-%{version}/LICENSE
+%doc README
 %config(noreplace) %{_sysconfdir}/php.d/%{ini_name}
 %{php_extdir}/ssh2.so
 %{pecl_xmldir}/%{name}.xml
 
 
 %changelog
+* Mon Jun 27 2016 Remi Collet <remi@fedoraproject.org> - 1.0-1
+- update to 1.0
+- rebuild for https://fedoraproject.org/wiki/Changes/php70
+- spec cleanup
+
 * Thu Feb 25 2016 Remi Collet <remi@fedoraproject.org> - 0.12-8
 - drop scriptlets (replaced by file triggers in php-pear) #1310546
 
