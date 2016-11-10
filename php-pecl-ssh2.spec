@@ -3,7 +3,7 @@
 
 Name:           php-pecl-ssh2
 Version:        1.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -12,7 +12,7 @@ URL:            http://pecl.php.net/package/ssh2
 Source0:        http://pecl.php.net/get/ssh2-%{version}.tgz
 Source2:        php-pecl-ssh2-0.10-README
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Patch0:         %{pecl_name}-php7013.patch
 
 BuildRequires:  libssh2-devel >= 1.2
 BuildRequires:  php-devel > 7
@@ -39,6 +39,9 @@ sed -e 's/role="test"/role="src"/' \
     -e '/LICENSE/s/role="doc"/role="src"/' \
     -i package.xml
 
+cd %{pecl_name}-%{version}
+%patch0 -p1 -b .php7013
+cd ..
 
 extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.* "//;s/".*$//;p}' %{pecl_name}-%{version}/php_ssh2.h)
 if test "x${extver}" != "x%{version}"; then
@@ -60,7 +63,6 @@ phpize
 
 %install
 cd %{pecl_name}-%{version}
-rm -rf %{buildroot}
 make install INSTALL_ROOT=%{buildroot}
 
 # Install XML package description
@@ -97,6 +99,9 @@ php --no-php-ini \
 
 
 %changelog
+* Thu Nov 10 2016 Remi Collet <remi@fedoraproject.org> - 1.0-2
+- add patch for parse_url change in PHP 7.0.13
+
 * Mon Jun 27 2016 Remi Collet <remi@fedoraproject.org> - 1.0-1
 - update to 1.0
 - rebuild for https://fedoraproject.org/wiki/Changes/php70
