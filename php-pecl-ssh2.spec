@@ -3,7 +3,7 @@
 
 Name:           php-pecl-ssh2
 Version:        1.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -99,6 +99,9 @@ php --no-php-ini \
 
 
 %changelog
+* Mon Nov 14 2016 Remi Collet <remi@fedoraproject.org> - 1.0-3
+- rebuild for https://fedoraproject.org/wiki/Changes/php71
+
 * Thu Nov 10 2016 Remi Collet <remi@fedoraproject.org> - 1.0-2
 - add patch for parse_url change in PHP 7.0.13
 
