@@ -2,8 +2,8 @@
 %global ini_name  40-%{pecl_name}.ini
 
 Name:           php-pecl-ssh2
-Version:        1.0
-Release:        4%{?dist}
+Version:        1.1
+Release:        1%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
@@ -11,8 +11,6 @@ Group:          Development/Languages
 URL:            http://pecl.php.net/package/ssh2
 Source0:        http://pecl.php.net/get/ssh2-%{version}.tgz
 Source2:        php-pecl-ssh2-0.10-README
-
-Patch0:         %{pecl_name}-php7013.patch
 
 BuildRequires:  libssh2-devel >= 1.2
 BuildRequires:  php-devel > 7
@@ -40,12 +38,11 @@ sed -e 's/role="test"/role="src"/' \
     -i package.xml
 
 cd %{pecl_name}-%{version}
-%patch0 -p1 -b .php7013
 cd ..
 
-extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.* "//;s/".*$//;p}' %{pecl_name}-%{version}/php_ssh2.h)
+extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.*\t"//;s/".*$//;p}' %{pecl_name}-%{version}/php_ssh2.h)
 if test "x${extver}" != "x%{version}"; then
-   : Error: Upstream PDO ABI version is now ${extver}, expecting %{version}.
+   : Error: Upstream version is now ${extver}, expecting %{version}.
    : Update the pdover macro and rebuild.
    exit 1
 fi
@@ -99,6 +96,10 @@ php --no-php-ini \
 
 
 %changelog
+* Wed Jun 14 2017 Remi Collet <remi@remirepo.net> - 1.1-1
+- Update to 1.1 (alpha)
+- drop patch merged upstream
+
 * Sat Feb 11 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1.0-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_26_Mass_Rebuild
 
