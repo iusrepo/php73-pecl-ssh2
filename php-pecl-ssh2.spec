@@ -1,16 +1,16 @@
 %define pecl_name ssh2
 %global ini_name  40-%{pecl_name}.ini
+%global with_zts  0%{!?_without_zts:%{?__ztsphp:1}}
 
 Name:           php-pecl-ssh2
-Version:        1.1
-Release:        3%{?dist}
+Version:        1.1.2
+Release:        1%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
 Group:          Development/Languages
-URL:            http://pecl.php.net/package/ssh2
-Source0:        http://pecl.php.net/get/ssh2-%{version}.tgz
-Source2:        php-pecl-ssh2-0.10-README
+URL:            http://pecl.php.net/package/%{pecl_name}
+Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 
 BuildRequires:  libssh2-devel >= 1.2
 BuildRequires:  php-devel > 7
@@ -26,51 +26,69 @@ Requires:       php(api) = %{php_core_api}
 
 
 %description
-Bindings to the functions of libssh2 which implements the SSH2 protocol.
-libssh2 is available from http://www.sourceforge.net/projects/libssh2
+Bindings to the libssh2 library which provide access to resources
+(shell, remote exec, tunneling, file transfer) on a remote machine using
+a secure cryptographic transport.
+
+Documentation: http://php.net/ssh2
+
 
 %prep
 %setup -c -q 
+mv %{pecl_name}-%{version} NTS
 
 # Don't install/register tests
 sed -e 's/role="test"/role="src"/' \
     -e '/LICENSE/s/role="doc"/role="src"/' \
     -i package.xml
 
-cd %{pecl_name}-%{version}
-cd ..
-
-extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.*\t"//;s/".*$//;p}' %{pecl_name}-%{version}/php_ssh2.h)
+cd NTS
+extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.*\t"//;s/".*$//;p}' php_ssh2.h)
 if test "x${extver}" != "x%{version}"; then
    : Error: Upstream version is now ${extver}, expecting %{version}.
    : Update the pdover macro and rebuild.
    exit 1
 fi
+cd ..
 
-mv package.xml %{pecl_name}-%{version}/%{pecl_name}.xml
+cat > %{ini_name} << 'EOF'
+; Enable %{pecl_name} extension module
+extension=%{pecl_name}.so
+EOF
 
-%{__install} -m 644 -c %{SOURCE2} README
+%if %{with_zts}
+: Duplicate source tree for NTS / ZTS build
+cp -pr NTS ZTS
+%endif
 
 
 %build
-cd %{pecl_name}-%{version}
-phpize
-%configure
-%{__make} %{?_smp_mflags}
+cd NTS
+%{_bindir}/phpize
+%configure --with-php-config=%{_bindir}/php-config
+make %{?_smp_mflags}
+
+%if %{with_zts}
+cd ../ZTS
+%{_bindir}/zts-phpize
+%configure --with-php-config=%{_bindir}/zts-php-config
+make %{?_smp_mflags}
+%endif
+
 
 %install
-cd %{pecl_name}-%{version}
-make install INSTALL_ROOT=%{buildroot}
+make -C NTS install INSTALL_ROOT=%{buildroot}
 
 # Install XML package description
-install -Dpm 644 %{pecl_name}.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
+install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 # install config file
-install -d %{buildroot}%{_sysconfdir}/php.d
-cat > %{buildroot}%{_sysconfdir}/php.d/%{ini_name} << 'EOF'
-; Enable ssh2 extension module
-extension=ssh2.so
-EOF
+install -Dpm644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
+
+%if %{with_zts}
+make -C ZTS install INSTALL_ROOT=%{buildroot}
+install -Dpm644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
+%endif
 
 # Documentation
 for i in $(grep 'role="doc"' package.xml | sed -e 's/^.*name="//;s/".*$//')
@@ -79,23 +97,42 @@ done
 
 
 %check
-# simple module load test
-cd %{pecl_name}-%{version}
-php --no-php-ini \
-    --define extension_dir=modules \
+: Minimal load test for NTS extension
+%{__php} --no-php-ini \
+    --define extension_dir=%{buildroot}%{php_extdir} \
     --define extension=%{pecl_name}.so \
     --modules | grep %{pecl_name}
 
+%if %{with_zts}
+: Minimal load test for ZTS extension
+%{__ztsphp} --no-php-ini \
+    --define extension_dir=%{buildroot}%{php_ztsextdir} \
+    --define extension=%{pecl_name}.so \
+    --modules | grep %{pecl_name}
+%endif
+
 
 %files
-%license %{pecl_name}-%{version}/LICENSE
-%doc README
-%config(noreplace) %{_sysconfdir}/php.d/%{ini_name}
-%{php_extdir}/ssh2.so
+%license NTS/LICENSE
+%doc %{pecl_docdir}/%{pecl_name}
 %{pecl_xmldir}/%{name}.xml
+
+%config(noreplace) %{_sysconfdir}/php.d/%{ini_name}
+%{php_extdir}/%{pecl_name}.so
+
+%if %{with_zts}
+%config(noreplace) %{php_ztsinidir}/%{ini_name}
+%{php_ztsextdir}/%{pecl_name}.so
+%endif
 
 
 %changelog
+* Thu Aug  3 2017 Remi Collet <remi@remirepo.net> - 1.1.2-1
+- Update to 1.1 (alpha) - no change
+- drop RPM specific README file
+- add link to documentation in package description
+- add ZTS extension
+
 * Thu Aug 03 2017 Fedora Release Engineering <releng@fedoraproject.org> - 1.1-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
 
