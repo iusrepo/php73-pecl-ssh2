@@ -4,13 +4,16 @@
 
 Name:           php-pecl-ssh2
 Version:        1.1.2
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
 Group:          Development/Languages
 URL:            http://pecl.php.net/package/%{pecl_name}
 Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
+
+Patch0:         https://github.com/php/pecl-networking-ssh2/commit/a8835aab2c15e794fce13bd927295719e384ad2d.patch
+Patch1:         https://github.com/php/pecl-networking-ssh2/commit/073067ba96ac99ed5696d27f13ca6c8124986e74.patch
 
 BuildRequires:  libssh2-devel >= 1.2
 BuildRequires:  php-devel > 7
@@ -43,6 +46,9 @@ sed -e 's/role="test"/role="src"/' \
     -i package.xml
 
 cd NTS
+%patch0 -p1 -b .up0
+%patch1 -p1 -b .up1
+
 extver=$(sed -n '/#define PHP_SSH2_VERSION/{s/.*\t"//;s/".*$//;p}' php_ssh2.h)
 if test "x${extver}" != "x%{version}"; then
    : Error: Upstream version is now ${extver}, expecting %{version}.
@@ -127,6 +133,10 @@ done
 
 
 %changelog
+* Thu Oct 11 2018 Remi Collet <remi@remirepo.net> - 1.1.2-5
+- Rebuild for https://fedoraproject.org/wiki/Changes/php73
+- add upstream patches for 7.3
+
 * Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.2-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
