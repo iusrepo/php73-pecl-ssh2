@@ -8,7 +8,6 @@ Release:        5%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
-Group:          Development/Languages
 URL:            http://pecl.php.net/package/%{pecl_name}
 Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 
