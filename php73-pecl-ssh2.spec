@@ -1,19 +1,21 @@
-%define pecl_name ssh2
+%global pecl_name ssh2
 %global ini_name  40-%{pecl_name}.ini
 %global with_zts  0%{!?_without_zts:%{?__ztsphp:1}}
+%global php       php73
 
-Name:           php-pecl-ssh2
+Name:           %{php}-pecl-%{pecl_name}
 Version:        1.2
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Bindings for the libssh2 library
 
 License:        PHP
-URL:            http://pecl.php.net/package/%{pecl_name}
-Source0:        http://pecl.php.net/get/%{pecl_name}-%{version}.tgz
+URL:            https://pecl.php.net/package/%{pecl_name}
+Source0:        https://pecl.php.net/get/%{pecl_name}-%{version}.tgz
 
 BuildRequires:  libssh2-devel >= 1.2
-BuildRequires:  php-devel > 7
-BuildRequires:  php-pear
+BuildRequires:  %{php}-devel
+# build require pear1's dependencies to avoid mismatched php stacks
+BuildRequires:  pear1 %{php}-cli %{php}-common %{php}-xml
 
 Provides:       php-%{pecl_name}               = %{version}
 Provides:       php-%{pecl_name}%{?_isa}       = %{version}
@@ -22,6 +24,16 @@ Provides:       php-pecl(%{pecl_name})%{?_isa} = %{version}
 
 Requires:       php(zend-abi) = %{php_zend_api}
 Requires:       php(api) = %{php_core_api}
+
+Provides:       %{php}-%{pecl_name}               = %{version}
+Provides:       %{php}-%{pecl_name}%{?_isa}       = %{version}
+Provides:       %{php}-pecl(%{pecl_name})         = %{version}
+Provides:       %{php}-pecl(%{pecl_name})%{?_isa} = %{version}
+
+# safe replacement
+Provides:       php-pecl-%{pecl_name} = %{version}-%{release}
+Provides:       php-pecl-%{pecl_name}%{?_isa} = %{version}-%{release}
+Conflicts:      php-pecl-%{pecl_name} < %{version}-%{release}
 
 
 %description
@@ -33,7 +45,7 @@ Documentation: http://php.net/ssh2
 
 
 %prep
-%setup -c -q 
+%setup -c -q
 mv %{pecl_name}-%{version} NTS
 
 # Don't install/register tests
@@ -65,13 +77,13 @@ cp -pr NTS ZTS
 cd NTS
 %{_bindir}/phpize
 %configure --with-php-config=%{_bindir}/php-config
-make %{?_smp_mflags}
+%make_build
 
 %if %{with_zts}
 cd ../ZTS
 %{_bindir}/zts-phpize
 %configure --with-php-config=%{_bindir}/zts-php-config
-make %{?_smp_mflags}
+%make_build
 %endif
 
 
@@ -79,7 +91,7 @@ make %{?_smp_mflags}
 make -C NTS install INSTALL_ROOT=%{buildroot}
 
 # Install XML package description
-install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
+install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{pecl_name}.xml
 
 # install config file
 install -Dpm644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
@@ -111,12 +123,30 @@ done
 %endif
 
 
+%triggerin -- pear1
+if [ -x %{__pecl} ]; then
+    %{pecl_install} %{pecl_xmldir}/%{pecl_name}.xml >/dev/null || :
+fi
+
+
+%posttrans
+if [ -x %{__pecl} ]; then
+    %{pecl_install} %{pecl_xmldir}/%{pecl_name}.xml >/dev/null || :
+fi
+
+
+%postun
+if [ $1 -eq 0 -a -x %{__pecl} ]; then
+    %{pecl_uninstall} %{pecl_name} >/dev/null || :
+fi
+
+
 %files
 %license NTS/LICENSE
 %doc %{pecl_docdir}/%{pecl_name}
-%{pecl_xmldir}/%{name}.xml
+%{pecl_xmldir}/%{pecl_name}.xml
 
-%config(noreplace) %{_sysconfdir}/php.d/%{ini_name}
+%config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{pecl_name}.so
 
 %if %{with_zts}
@@ -126,6 +156,9 @@ done
 
 
 %changelog
+* Wed Jul 29 2020 Carl George <carl@george.computer> - 1.2-5
+- Port from Fedora to IUS
+
 * Tue Jul 28 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1.2-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_33_Mass_Rebuild
 
